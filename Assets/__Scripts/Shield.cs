@@ -18,7 +18,7 @@ public class Shield : MonoBehaviour {
 		int currlevel = Mathf.FloorToInt (Hero.S.shieldLevel);
 		if (levelShown != currlevel) {
 			levelShown = currlevel;
-			Material mat = this.renderer.material;
+			Material mat = this.GetComponent<Renderer>().material;
 			mat.mainTextureOffset = new Vector2(0.2f*levelShown, 0f);
 		}
 

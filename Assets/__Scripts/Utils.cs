@@ -31,12 +31,12 @@ public class Utils : MonoBehaviour
 	public static Bounds CombineBoundsOfChildren(GameObject go) 
 	{
 		Bounds b = new Bounds (Vector3.zero, Vector3.zero);
-		if (go.renderer != null) {
-			b = BoundsUnion(b, go.renderer.bounds);
+		if (go.GetComponent<Renderer>() != null) {
+			b = BoundsUnion(b, go.GetComponent<Renderer>().bounds);
 		}
 
-		if (go.collider != null) {
-			b = BoundsUnion(b, go.collider.bounds);
+		if (go.GetComponent<Collider>() != null) {
+			b = BoundsUnion(b, go.GetComponent<Collider>().bounds);
 		}
 
 		foreach (Transform t in go.transform) {
@@ -192,7 +192,37 @@ public class Utils : MonoBehaviour
 	
 	} // end BoundsInBoundsCheck
 	
-	
+	public static GameObject FindTaggedParent(GameObject go)
+    {
+        if(go.tag != "Untagged")
+        {
+            return (go);
+        }
+        if(go.transform.parent == null)
+        {
+            return (null);
+        }
+        return (FindTaggedParent(go.transform.parent.gameObject));
+    }
+
+    public static GameObject FindTaggedParent(Transform t)
+    {
+        return (FindTaggedParent(t.gameObject));
+    }
+
+    static public Material[] GetAllMaterials(GameObject go)
+    {
+        List<Material> mats = new List<Material>();
+        if(go.GetComponent<Renderer>() != null)
+        {
+            mats.Add(go.GetComponent<Renderer>().material);
+        }
+        foreach(Transform t in go.transform)
+        {
+            mats.AddRange(GetAllMaterials(t.gameObject));
+        }
+        return (mats.ToArray());
+    }
 	
 }// End of Util Class
 
