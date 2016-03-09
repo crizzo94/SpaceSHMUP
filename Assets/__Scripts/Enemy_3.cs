@@ -13,7 +13,7 @@ public class Enemy_3 : Enemy {
         points[0] = pos;
 
         float xMin = Utils.camBounds.min.x + Main.S.enemySpawnPadding;
-        float xMax = Utils.camBounds.min.x - Main.S.enemySpawnPadding;
+        float xMax = Utils.camBounds.max.x - Main.S.enemySpawnPadding;
 
         Vector3 v;
 

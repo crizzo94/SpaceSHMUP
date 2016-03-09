@@ -48,9 +48,6 @@ public class Utils : MonoBehaviour
 	}
 
 
-// PRIVATE VARIABLE
-	static private Bounds _camBounds;
-
 //PROPERTY
 	static public Bounds camBounds {
 		get {
@@ -60,10 +57,12 @@ public class Utils : MonoBehaviour
 			return (_camBounds);
 		} // end of get
 	}
-	
-	//function used by camBound property and also may be called directly
-	
-	public static void SetCameraBounds(Camera cam=null) {
+
+    static private Bounds _camBounds;
+
+    //function used by camBound property and also may be called directly
+
+    public static void SetCameraBounds(Camera cam=null) {
 		// use the main camera as default if none passed in.
 		if (cam == null)
 			cam = Camera.main;
@@ -72,7 +71,7 @@ public class Utils : MonoBehaviour
 		// get top left and bottomRight
 		
 			Vector3 topLeft = new Vector3(0,0,0);
-			Vector3 bottomRight = new Vector3(Screen.width, Screen.height, 0f);
+			Vector3 bottomRight = new Vector3(Screen.width, Screen.height, 0);
 			
 			Vector3 boundTLN = cam.ScreenToWorldPoint(topLeft);
 			Vector3	boundBRF = cam.ScreenToWorldPoint(bottomRight);	
@@ -130,7 +129,7 @@ public class Utils : MonoBehaviour
 
 			//-------------------------
 			// what is the offset to keep ALL of lilB inside bigB
-			case BoundsTest.onScreen:
+		case BoundsTest.onScreen:
 			// trivial case - we are already inside
 			if (bigB.Contains(lilB.max) && bigB.Contains(lilB.min)) {
 				return (Vector3.zero);   //no need to move
@@ -158,7 +157,7 @@ public class Utils : MonoBehaviour
 			
 			//-------------------------
 			// what is the offset to keep ALL of lilB outside of bigB					
-			case BoundsTest.offScreen:
+		case BoundsTest.offScreen:
 			bool cMin = bigB.Contains(lilB.min);
 			bool cMax = bigB.Contains(lilB.max);
 			
@@ -224,6 +223,187 @@ public class Utils : MonoBehaviour
         return (mats.ToArray());
     }
 	
-}// End of Util Class
+    static public Vector3 Lerp(Vector3 vFrom, Vector3 vTo, float u)
+    {
+        Vector3 res = (1 - u) * vFrom + u * vTo;
+        return (res);
+    }
+
+    static public Vector2 Lerp(Vector2 vFrom, Vector2 vTo, float u)
+    {
+        Vector2 res = (1 - u) * vFrom + u * vTo;
+        return (res);
+    }
+
+    static public float Lerp(float vFrom, float vTo, float u)
+    {
+        float res = (1 - u) * vFrom + u * vTo;
+        return (res);
+    }
+
+    static public Vector3 Bezier(float u, List<Vector3> vList)
+    {
+        if(vList.Count == 1)
+        {
+            return (vList[0]);
+        }
+
+        List<Vector3> vListR = vList.GetRange(1, vList.Count - 1);
+        vList.RemoveAt(vList.Count - 1);
+        Vector3 res = Lerp(Bezier(u, vList), Bezier(u, vListR), u);
+        return (res);
+    }
+
+    static public Vector3 Bezier(float u, params Vector3[] vecs)
+    {
+        return (Bezier(u, new List<Vector3>(vecs)));
+    }
+
+    static public Vector2 Bezier(float u, List<Vector2> vList)
+    {
+        if(vList.Count == 1)
+        {
+            return (vList[0]);
+        }
+
+        List<Vector2> vListR = vList.GetRange(1, vList.Count - 1);
+        vList.RemoveAt(vList.Count - 1);
+        Vector2 res = Lerp(Bezier(u, vList), Bezier(u, vListR), u);
+        return (res);
+    }
+
+    static public Vector2 Bezier(float u, params Vector2[] vecs)
+    {
+        return (Bezier(u, new List<Vector2>(vecs)));
+    }
+}
+
+[System.Serializable]
+public class EasingCachedCurve {
+    public List<string> curves = new List<string>();
+    public List<float> mods = new List<float>();
+}
+
+public class Easing {
+    static public string Liner = ",Linear|";
+    static public string In = ",In|";
+    static public string Out = ",Out";
+    static public string InOut = ",InOut|";
+    static public string Sin = ",Sin|";
+    static public string SinIn = ",SinIn|";
+    static public string SinOut = ",SinOut|";
+
+    static public Dictionary<string, EasingCachedCurve> cache;
+
+    static public float Ease(float u, params string[] curveParams)
+    {
+        if(cache == null)
+        {
+            cache = new Dictionary<string, EasingCachedCurve>();
+        }
+
+        float u2 = u;
+        foreach(string curve in curveParams)
+        {
+            if (!cache.ContainsKey(curve))
+            {
+                EaseParse(curve);
+            }
+            u2 = EaseP(u2, cache[curve]);
+        }
+        return (u2);
+    }
+
+    static private void EaseParse(string curveIn)
+    {
+        EasingCachedCurve ecc = new EasingCachedCurve();
+        string[] curves = curveIn.Split(',');
+        foreach(string curve in curves)
+        {
+            if (curve == "") continue;
+            string[] curveA = curve.Split('|');
+            ecc.curves.Add(curveA[0]);
+            if(curveA.Length == 1 || curveA[1] == "")
+            {
+                ecc.mods.Add(float.NaN);
+            } else
+            {
+                float parseRes;
+                if(float.TryParse(curveA[1], out parseRes))
+                {
+                    ecc.mods.Add(parseRes);
+                }
+                else
+                {
+                    ecc.mods.Add(float.NaN);
+                }
+            }
+        }
+        cache.Add(curveIn, ecc);
+    }
+
+    static public float Ease(float u, string curve, float mod)
+    {
+        return (EaseP(u, curve, mod));
+    }
+
+    static private float EaseP(float u, EasingCachedCurve ec)
+    {
+        float u2 = u;
+        for(int i=0; i < ec.curves.Count; i++)
+        {
+            u2 = EaseP(u2, ec.curves[i], ec.mods[i]);
+        }
+        return (u2);
+    }
+
+    static private float EaseP(float u, string curve, float mod)
+    {
+        float u2 = u;
+
+        switch (curve)
+        {
+            case "In":
+                if (float.IsNaN(mod)) mod = 2;
+                u2 = Mathf.Pow(u, mod);
+                break;
+
+            case "Out":
+                if (float.IsNaN(mod)) mod = 2;
+                u2 = 1 - Mathf.Pow(1 - u, mod);
+                break;
+
+            case "InOut":
+                if (float.IsNaN(mod)) mod = 2;
+                if(u <= 0.5f)
+                {
+                    u2 = 0.5f * Mathf.Pow(u * 2, mod);
+                }
+                else
+                {
+                    u2 = 0.5f + 0.5f * (1 - Mathf.Pow(1 - (2 * (u - 0.5f)), mod));
+                }
+                break;
+
+            case "Sin":
+                if (float.IsNaN(mod)) mod = 2;
+                u2 = u + mod * Mathf.Sin(2 * Mathf.PI * u);
+                break;
+
+            case "SinIn":
+                u2 = 1 - Mathf.Cos(u * Mathf.PI * 0.5f);
+                break;
+
+            case "SinOut":
+                u2 = Mathf.Sin(u * Mathf.PI * 0.5f);
+                break;
+
+            case "Linear":
+            default:
+                break;
+        }
+        return (u2);
+    }
+}
 
 
